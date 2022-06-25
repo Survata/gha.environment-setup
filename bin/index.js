@@ -43,7 +43,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const command = __importStar(__nccwpck_require__(5604));
 const core = __importStar(__nccwpck_require__(5127));
 const client_ssm_1 = __nccwpck_require__(5711);
-const fs = __importStar(__nccwpck_require__(3292));
+const fs = __importStar(__nccwpck_require__(3977));
 try {
     setNetAndNpm();
     const awsRegion = core.getInput('awsRegion');
@@ -46847,14 +46847,6 @@ module.exports = require("fs");
 
 /***/ }),
 
-/***/ 3292:
-/***/ ((module) => {
-
-"use strict";
-module.exports = require("fs/promises");
-
-/***/ }),
-
 /***/ 3685:
 /***/ ((module) => {
 
@@ -46884,6 +46876,14 @@ module.exports = require("https");
 
 "use strict";
 module.exports = require("net");
+
+/***/ }),
+
+/***/ 3977:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:fs/promises");
 
 /***/ }),
 

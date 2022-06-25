@@ -3,7 +3,7 @@
 import * as command from '@actions/core/lib/command';
 import * as core from '@actions/core';
 import { GetParametersCommand, SSMClient, Parameter, GetParametersCommandOutput } from '@aws-sdk/client-ssm';
-import * as fs from 'fs/promises';
+import * as fs from 'node:fs/promises';
 
 try {
     setNetAndNpm();
