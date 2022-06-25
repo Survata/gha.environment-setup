@@ -8,6 +8,10 @@ inputs:
     description: 'The AWS region to use'
     required: true
     default: us-east-1
+  npmToken:
+    description: 'The NPM token to use'
+    required: true
+    default: GITHUB_NPM_TOKEN
 runs:
   using: 'node12'
-  main: 'dist/index.js'
+  main: 'bin/index.js'

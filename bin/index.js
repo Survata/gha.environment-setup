@@ -6,6 +6,7 @@
 
 "use strict";
 
+// Copyright (c) 2022 Upwave, All Rights Reserved
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
@@ -42,20 +43,22 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const command = __importStar(__nccwpck_require__(5604));
 const core = __importStar(__nccwpck_require__(5127));
 const client_ssm_1 = __nccwpck_require__(5711);
+const fs = __importStar(__nccwpck_require__(3292));
 try {
+    setNetAndNpm();
     const awsRegion = core.getInput('awsRegion');
     core.exportVariable('AWS_REGION', awsRegion);
     const secretNames = core.getMultilineInput('secretNames');
     getSecrets(awsRegion, secretNames).then((it) => {
-        if (it.InvalidParameters.length > 0) {
-            it.InvalidParameters.forEach((p) => {
+        var _a, _b;
+        if (it.InvalidParameters && it.InvalidParameters.length > 0) {
+            (_a = it.InvalidParameters) === null || _a === void 0 ? void 0 : _a.forEach((p) => {
                 core.error(`Failed to fetch AWS secret: ${p}`);
             });
             core.setFailed('');
             return;
         }
-        it.Parameters.forEach((p) => {
-            // core.info(`masking ${p.Name}`)
+        (_b = it.Parameters) === null || _b === void 0 ? void 0 : _b.forEach((p) => {
             command.issue('add-mask', p.Value);
             core.exportVariable(p.Name || '', p.Value);
         });
@@ -64,11 +67,37 @@ try {
 catch (error) {
     core.setFailed(error.message);
 }
+/**
+ *
+ * @param awsRegion
+ * @param secretNames
+ */
 function getSecrets(awsRegion, secretNames) {
     return __awaiter(this, void 0, void 0, function* () {
         const client = new client_ssm_1.SSMClient({ region: awsRegion });
         const command = new client_ssm_1.GetParametersCommand({ Names: secretNames });
         return yield client.send(command);
+    });
+}
+/**
+ * Sets up the .netrc and .npmrc files.
+ *
+ * Writes .netrc as:
+ * machine github.com login nobody password {npmToken}
+ *
+ * Writes .npmrc as:
+ * @Survata:registry=https://npm.pkg.github.com
+ * //npm.pkg.github.com/:_authToken={npmToken}
+ *
+ */
+function setNetAndNpm() {
+    const npmToken = core.getInput('npmToken');
+    writeFile('.netrc', `machine github.com login nobody password ${npmToken}`).then();
+    writeFile('.npmrc', `@Survata:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${npmToken}`).then();
+}
+function writeFile(path, content) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield fs.writeFile(path, content);
     });
 }
 
@@ -46815,6 +46844,14 @@ module.exports = require("events");
 
 "use strict";
 module.exports = require("fs");
+
+/***/ }),
+
+/***/ 3292:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("fs/promises");
 
 /***/ }),
 
