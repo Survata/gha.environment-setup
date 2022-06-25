@@ -14,24 +14,29 @@ import {
 const fs = require('fs').promises;
 
 try {
+    // setup region
     const awsRegion: string = core.getInput('awsRegion');
     core.exportVariable('AWS_REGION', awsRegion);
 
+    // setup secrets
     const secretNames: string[] = core.getMultilineInput('secretNames');
-    getSecrets(awsRegion, secretNames).then((it: GetParametersCommandOutput) => {
-        if (it.InvalidParameters && it.InvalidParameters.length > 0) {
-            it.InvalidParameters?.forEach((p: string) => {
-                core.error(`Failed to fetch AWS secret: ${p}`);
+    if (secretNames.length > 0) {
+        getSecrets(awsRegion, secretNames).then((it: GetParametersCommandOutput) => {
+            if (it.InvalidParameters && it.InvalidParameters.length > 0) {
+                it.InvalidParameters?.forEach((p: string) => {
+                    core.error(`Failed to fetch AWS secret: ${p}`);
+                });
+                core.setFailed('');
+                return;
+            }
+            it.Parameters?.forEach((p: Parameter) => {
+                command.issue('add-mask', p.Value);
+                core.exportVariable(p.Name || '', p.Value);
             });
-            core.setFailed('');
-            return;
-        }
-        it.Parameters?.forEach((p: Parameter) => {
-            command.issue('add-mask', p.Value);
-            core.exportVariable(p.Name || '', p.Value);
         });
-    });
+    }
 
+    // setup .netrc and .npmrc
     setNetAndNpm(awsRegion);
 } catch (error: any) {
     core.setFailed(error.message);

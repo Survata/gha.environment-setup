@@ -46,23 +46,28 @@ const client_ssm_1 = __nccwpck_require__(5711);
 // ncc wasn't including fs/promises when using import, using require works
 const fs = (__nccwpck_require__(7147).promises);
 try {
+    // setup region
     const awsRegion = core.getInput('awsRegion');
     core.exportVariable('AWS_REGION', awsRegion);
+    // setup secrets
     const secretNames = core.getMultilineInput('secretNames');
-    getSecrets(awsRegion, secretNames).then((it) => {
-        var _a, _b;
-        if (it.InvalidParameters && it.InvalidParameters.length > 0) {
-            (_a = it.InvalidParameters) === null || _a === void 0 ? void 0 : _a.forEach((p) => {
-                core.error(`Failed to fetch AWS secret: ${p}`);
+    if (secretNames.length > 0) {
+        getSecrets(awsRegion, secretNames).then((it) => {
+            var _a, _b;
+            if (it.InvalidParameters && it.InvalidParameters.length > 0) {
+                (_a = it.InvalidParameters) === null || _a === void 0 ? void 0 : _a.forEach((p) => {
+                    core.error(`Failed to fetch AWS secret: ${p}`);
+                });
+                core.setFailed('');
+                return;
+            }
+            (_b = it.Parameters) === null || _b === void 0 ? void 0 : _b.forEach((p) => {
+                command.issue('add-mask', p.Value);
+                core.exportVariable(p.Name || '', p.Value);
             });
-            core.setFailed('');
-            return;
-        }
-        (_b = it.Parameters) === null || _b === void 0 ? void 0 : _b.forEach((p) => {
-            command.issue('add-mask', p.Value);
-            core.exportVariable(p.Name || '', p.Value);
         });
-    });
+    }
+    // setup .netrc and .npmrc
     setNetAndNpm(awsRegion);
 }
 catch (error) {
