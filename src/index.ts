@@ -2,12 +2,17 @@
 
 import * as command from '@actions/core/lib/command';
 import * as core from '@actions/core';
-import { GetParametersCommand, SSMClient, Parameter, GetParametersCommandOutput } from '@aws-sdk/client-ssm';
+import {
+    GetParametersCommand,
+    SSMClient,
+    Parameter,
+    GetParametersCommandOutput,
+    GetParameterCommand, GetParameterCommandOutput
+} from '@aws-sdk/client-ssm';
+// ncc wasn't including fs/promises when using import, using require works
 const fs = require('fs').promises;
 
 try {
-    setNetAndNpm();
-
     const awsRegion: string = core.getInput('awsRegion');
     core.exportVariable('AWS_REGION', awsRegion);
 
@@ -25,6 +30,8 @@ try {
             core.exportVariable(p.Name || '', p.Value);
         });
     });
+
+    setNetAndNpm(awsRegion);
 } catch (error: any) {
     core.setFailed(error.message);
 }
@@ -51,15 +58,33 @@ async function getSecrets(awsRegion: string, secretNames: string[]): Promise<Get
  * //npm.pkg.github.com/:_authToken={npmToken}
  *
  */
-function setNetAndNpm() {
+function setNetAndNpm(awsRegion: string): void {
     const npmToken: string = core.getInput('npmToken');
-    writeFile('.netrc', `machine github.com login nobody password ${npmToken}`).then();
-    writeFile(
-        '.npmrc',
-        `@Survata:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${npmToken}`,
-    ).then();
+    getSecret(awsRegion, npmToken).then((it: GetParameterCommandOutput) => {
+        writeFile('.netrc', `machine github.com login nobody password ${it.Parameter?.Value}\n`).then();
+        writeFile(
+            '.npmrc',
+            `@Survata:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${it.Parameter?.Value}\n`,
+        ).then();
+    })
 }
 
+/**
+ *
+ * @param awsRegion
+ * @param secretName
+ */
+async function getSecret(awsRegion: string, secretName: string): Promise<GetParameterCommandOutput> {
+    const client: SSMClient = new SSMClient({ region: awsRegion });
+    const command: GetParameterCommand = new GetParameterCommand({ Name: secretName });
+    return await client.send(command);
+}
+
+/**
+ *
+ * @param path
+ * @param content
+ */
 async function writeFile(path: string, content: string): Promise<void> {
     await fs.writeFile(path, content);
 }
