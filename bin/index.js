@@ -96,7 +96,7 @@ function setNetAndNpm(awsRegion) {
     getSecret(awsRegion, npmToken).then((it) => {
         var _a, _b;
         writeFile('.netrc', `machine github.com login nobody password ${(_a = it.Parameter) === null || _a === void 0 ? void 0 : _a.Value}\n`).then();
-        writeFile('.npmrc', `@Survata:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${(_b = it.Parameter) === null || _b === void 0 ? void 0 : _b.Value}\n`).then();
+        writeFile(`${process.env.HOME}/.npmrc`, `@Survata:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${(_b = it.Parameter) === null || _b === void 0 ? void 0 : _b.Value}\n`).then();
     });
 }
 /**
