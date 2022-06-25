@@ -43,9 +43,9 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const command = __importStar(__nccwpck_require__(5604));
 const core = __importStar(__nccwpck_require__(5127));
 const client_ssm_1 = __nccwpck_require__(5711);
+// ncc wasn't including fs/promises when using import, using require works
 const fs = (__nccwpck_require__(7147).promises);
 try {
-    setNetAndNpm();
     const awsRegion = core.getInput('awsRegion');
     core.exportVariable('AWS_REGION', awsRegion);
     const secretNames = core.getMultilineInput('secretNames');
@@ -63,6 +63,7 @@ try {
             core.exportVariable(p.Name || '', p.Value);
         });
     });
+    setNetAndNpm(awsRegion);
 }
 catch (error) {
     core.setFailed(error.message);
@@ -90,11 +91,31 @@ function getSecrets(awsRegion, secretNames) {
  * //npm.pkg.github.com/:_authToken={npmToken}
  *
  */
-function setNetAndNpm() {
+function setNetAndNpm(awsRegion) {
     const npmToken = core.getInput('npmToken');
-    writeFile('.netrc', `machine github.com login nobody password ${npmToken}`).then();
-    writeFile('.npmrc', `@Survata:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${npmToken}`).then();
+    getSecret(awsRegion, npmToken).then((it) => {
+        var _a, _b;
+        writeFile('.netrc', `machine github.com login nobody password ${(_a = it.Parameter) === null || _a === void 0 ? void 0 : _a.Value}\n`).then();
+        writeFile('.npmrc', `@Survata:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${(_b = it.Parameter) === null || _b === void 0 ? void 0 : _b.Value}\n`).then();
+    });
 }
+/**
+ *
+ * @param awsRegion
+ * @param secretName
+ */
+function getSecret(awsRegion, secretName) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const client = new client_ssm_1.SSMClient({ region: awsRegion });
+        const command = new client_ssm_1.GetParameterCommand({ Name: secretName });
+        return yield client.send(command);
+    });
+}
+/**
+ *
+ * @param path
+ * @param content
+ */
 function writeFile(path, content) {
     return __awaiter(this, void 0, void 0, function* () {
         yield fs.writeFile(path, content);

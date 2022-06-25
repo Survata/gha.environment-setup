@@ -7,7 +7,8 @@ import {
     SSMClient,
     Parameter,
     GetParametersCommandOutput,
-    GetParameterCommand, GetParameterCommandOutput
+    GetParameterCommand,
+    GetParameterCommandOutput,
 } from '@aws-sdk/client-ssm';
 // ncc wasn't including fs/promises when using import, using require works
 const fs = require('fs').promises;
@@ -66,7 +67,7 @@ function setNetAndNpm(awsRegion: string): void {
             '.npmrc',
             `@Survata:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${it.Parameter?.Value}\n`,
         ).then();
-    })
+    });
 }
 
 /**
