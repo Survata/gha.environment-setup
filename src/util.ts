@@ -21,14 +21,4 @@ export namespace Util {
                 return false;
         }
     }
-
-    /**
-     * Report the messages to the console and fail the run.
-     *
-     * @param messages - the messages to report.
-     */
-    export function reportAndFail(...messages: string[]): void {
-        console.log('Run failed due to', messages);
-        process.exit(1);
-    }
 }

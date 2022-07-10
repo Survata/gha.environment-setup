@@ -42,7 +42,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.Action = void 0;
 const ssm_1 = __nccwpck_require__(87054);
-const util_1 = __nccwpck_require__(744);
 const core = __importStar(__nccwpck_require__(95127));
 const command = __importStar(__nccwpck_require__(65604));
 const fs_1 = __nccwpck_require__(57147);
@@ -61,7 +60,7 @@ var Action;
                 yield setNetAndNpm(args);
             }
             catch (e) {
-                util_1.Util.reportAndFail('Action.run()', e.message);
+                core.error(e.message);
             }
         });
     }
@@ -74,7 +73,7 @@ var Action;
  */
 function exportVariables(args) {
     return __awaiter(this, void 0, void 0, function* () {
-        const settingsString = yield ssm_1.ssm.getSecret(`DEPLOYMENT_VARIABLES_${args.region}`);
+        const settingsString = yield ssm_1.ssm.getSecret(`DEPLOYMENT_VARIABLES_${args.region.toUpperCase()}`);
         if (settingsString === undefined) {
             throw new Error('Failed to get settings from ParameterStore');
         }
@@ -87,6 +86,7 @@ function exportVariables(args) {
         args.variables.forEach((v) => {
             if (Object.prototype.hasOwnProperty.call(environmentSettings, v)) {
                 core.exportVariable(v, environmentSettings[v]);
+                core.info(`exported variable ${v}=${environmentSettings[v]}`);
             }
             else {
                 variablesNotFound.push(v);
@@ -117,6 +117,7 @@ function exportSecrets(args) {
                 (_b = it.Parameters) === null || _b === void 0 ? void 0 : _b.forEach((p) => {
                     command.issue('add-mask', p.Value);
                     core.exportVariable(p.Name || '', p.Value);
+                    core.info(`exported secret ${p.Name}`);
                 });
             });
         }
@@ -249,50 +250,6 @@ var ssm;
     }
     ssm.getSecrets = getSecrets;
 })(ssm = exports.ssm || (exports.ssm = {}));
-
-
-/***/ }),
-
-/***/ 744:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-// Copyright (c) 2022 Upwave, All Rights Reserved
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.Util = void 0;
-var Util;
-(function (Util) {
-    /**
-     * Tests if the provided string is "true".
-     *
-     * @param val
-     */
-    function isTrue(val) {
-        if (val === undefined) {
-            return false;
-        }
-        switch (val) {
-            case 'true':
-            case '1':
-            case true:
-                return true;
-            default:
-                return false;
-        }
-    }
-    Util.isTrue = isTrue;
-    /**
-     * Report the messages to the console and fail the run.
-     *
-     * @param messages - the messages to report.
-     */
-    function reportAndFail(...messages) {
-        console.log('Run failed due to', messages);
-        process.exit(1);
-    }
-    Util.reportAndFail = reportAndFail;
-})(Util = exports.Util || (exports.Util = {}));
 
 
 /***/ }),

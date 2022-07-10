@@ -4,7 +4,6 @@
 
 import { ActionArgs } from './actionArgs';
 import { ssm } from './ssm';
-import { Util } from './util';
 import * as core from '@actions/core';
 import { GetParametersCommandOutput, Parameter } from '@aws-sdk/client-ssm';
 import * as command from '@actions/core/lib/command';
@@ -22,7 +21,7 @@ export namespace Action {
             await exportSecrets(args);
             await setNetAndNpm(args);
         } catch (e: any) {
-            Util.reportAndFail('Action.run()', e.message);
+            core.error(e.message);
         }
     }
 }
@@ -33,7 +32,7 @@ export namespace Action {
  * @param args
  */
 async function exportVariables(args: ActionArgs) {
-    const settingsString: string | undefined = await ssm.getSecret(`DEPLOYMENT_VARIABLES_${args.region}`);
+    const settingsString: string | undefined = await ssm.getSecret(`DEPLOYMENT_VARIABLES_${args.region.toUpperCase()}`);
     if (settingsString === undefined) {
         throw new Error('Failed to get settings from ParameterStore');
     }
@@ -49,6 +48,7 @@ async function exportVariables(args: ActionArgs) {
     args.variables.forEach((v) => {
         if (Object.prototype.hasOwnProperty.call(environmentSettings, v)) {
             core.exportVariable(v, environmentSettings[v]);
+            core.info(`exported variable ${v}=${environmentSettings[v]}`);
         } else {
             variablesNotFound.push(v);
         }
@@ -76,6 +76,7 @@ async function exportSecrets(args: ActionArgs): Promise<void> {
             it.Parameters?.forEach((p: Parameter) => {
                 command.issue('add-mask', p.Value);
                 core.exportVariable(p.Name || '', p.Value);
+                core.info(`exported secret ${p.Name}`);
             });
         });
     }
