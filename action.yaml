@@ -1,15 +1,20 @@
 name: 'Environment Setup'
 description: 'GitHub action which sets up the runner environment'
 inputs:
+  environmentName:
+    description: 'Environment name'
+    required: true
+  regionName:
+    description: 'Region name'
+    required: true
   secretNames:
     description: 'List of secret names'
-    required: true
-  awsRegion:
-    description: 'The AWS region to use'
-    required: true
-    default: us-east-1
-  npmToken:
-    description: 'The NPM token to use'
+    required: false
+  variableNames:
+    description: 'List of variable names'
+    required: false
+  npmTokenName:
+    description: 'The NPM token name'
     required: true
     default: GITHUB_NPM_TOKEN
 runs:
