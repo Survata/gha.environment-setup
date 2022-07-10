@@ -60,7 +60,7 @@ var Action;
                 yield setNetAndNpm(args);
             }
             catch (e) {
-                core.error(e.message);
+                core.setFailed(e);
             }
         });
     }
@@ -84,12 +84,12 @@ function exportVariables(args) {
         }
         const variablesNotFound = [];
         args.variables.forEach((v) => {
-            if (Object.prototype.hasOwnProperty.call(environmentSettings, v)) {
-                core.exportVariable(v, environmentSettings[v]);
-                core.info(`exported variable ${v}=${environmentSettings[v]}`);
+            if (Object.prototype.hasOwnProperty.call(environmentSettings, v.sourceName)) {
+                core.exportVariable(v.exportName, environmentSettings[v.sourceName]);
+                core.info(`exported variable ${v.exportName}=${environmentSettings[v.sourceName]}`);
             }
             else {
-                variablesNotFound.push(v);
+                variablesNotFound.push(v.sourceName);
             }
         });
         if (variablesNotFound.length > 0) {
@@ -105,7 +105,8 @@ function exportVariables(args) {
 function exportSecrets(args) {
     return __awaiter(this, void 0, void 0, function* () {
         if (args.secrets.length > 0) {
-            ssm_1.ssm.getSecrets(args.secrets).then((it) => {
+            const secretNames = args.secrets.map((name) => name.sourceName);
+            ssm_1.ssm.getSecrets(secretNames).then((it) => {
                 var _a, _b;
                 if (it.InvalidParameters && it.InvalidParameters.length > 0) {
                     (_a = it.InvalidParameters) === null || _a === void 0 ? void 0 : _a.forEach((p) => {
@@ -115,9 +116,14 @@ function exportSecrets(args) {
                     return;
                 }
                 (_b = it.Parameters) === null || _b === void 0 ? void 0 : _b.forEach((p) => {
+                    const argName = args.secrets.find((name) => name.sourceName === p.Name);
+                    if (argName === undefined) {
+                        core.setFailed('Failed to lookup action arg name');
+                        return;
+                    }
                     command.issue('add-mask', p.Value);
-                    core.exportVariable(p.Name || '', p.Value);
-                    core.info(`exported secret ${p.Name}`);
+                    core.exportVariable(argName.exportName, p.Value);
+                    core.info(`exported secret ${argName.exportName}`);
                 });
             });
         }
@@ -175,7 +181,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.NewActionArgs = void 0;
+exports.parseActionArgNames = exports.NewActionArgs = void 0;
 const core = __importStar(__nccwpck_require__(95127));
 /**
  * Construct action arguments.
@@ -183,15 +189,38 @@ const core = __importStar(__nccwpck_require__(95127));
  * @constructor
  */
 function NewActionArgs() {
-    return {
+    const args = {
         environment: core.getInput('environmentName'),
         region: core.getInput('regionName'),
         npmToken: core.getInput('npmTokenName'),
-        secrets: core.getMultilineInput('secretNames'),
-        variables: core.getMultilineInput('variableNames'),
+        secrets: [],
+        variables: [],
     };
+    core.getMultilineInput('secretNames').forEach((name) => {
+        args.secrets.push(parseActionArgNames(name));
+    });
+    core.getMultilineInput('variableNames').forEach((name) => {
+        args.variables.push(parseActionArgNames(name));
+    });
+    return args;
 }
 exports.NewActionArgs = NewActionArgs;
+/**
+ * Parse a string into action arg names.
+ *
+ * @param source
+ */
+function parseActionArgNames(source) {
+    const parts = source.split(':');
+    if (parts.length === 1 && source.length > 0) {
+        return { sourceName: source, exportName: source };
+    }
+    if (parts.length === 2 && parts[0].length > 0 && parts[1].length > 0) {
+        return { sourceName: parts[0], exportName: parts[1] };
+    }
+    throw new Error(`Failed to parse ActionArgNames for source=[${source}]`);
+}
+exports.parseActionArgNames = parseActionArgNames;
 
 
 /***/ }),

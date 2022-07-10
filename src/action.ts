@@ -2,7 +2,7 @@
 
 'use strict';
 
-import { ActionArgs } from './actionArgs';
+import { ActionArgNames, ActionArgs } from './actionArgs';
 import { ssm } from './ssm';
 import * as core from '@actions/core';
 import { GetParametersCommandOutput, Parameter } from '@aws-sdk/client-ssm';
@@ -21,7 +21,7 @@ export namespace Action {
             await exportSecrets(args);
             await setNetAndNpm(args);
         } catch (e: any) {
-            core.error(e.message);
+            core.setFailed(e);
         }
     }
 }
@@ -46,11 +46,11 @@ async function exportVariables(args: ActionArgs) {
 
     const variablesNotFound: string[] = [];
     args.variables.forEach((v) => {
-        if (Object.prototype.hasOwnProperty.call(environmentSettings, v)) {
-            core.exportVariable(v, environmentSettings[v]);
-            core.info(`exported variable ${v}=${environmentSettings[v]}`);
+        if (Object.prototype.hasOwnProperty.call(environmentSettings, v.sourceName)) {
+            core.exportVariable(v.exportName, environmentSettings[v.sourceName]);
+            core.info(`exported variable ${v.exportName}=${environmentSettings[v.sourceName]}`);
         } else {
-            variablesNotFound.push(v);
+            variablesNotFound.push(v.sourceName);
         }
     });
     if (variablesNotFound.length > 0) {
@@ -65,7 +65,8 @@ async function exportVariables(args: ActionArgs) {
  */
 async function exportSecrets(args: ActionArgs): Promise<void> {
     if (args.secrets.length > 0) {
-        ssm.getSecrets(args.secrets).then((it: GetParametersCommandOutput) => {
+        const secretNames: string[] = args.secrets.map((name: ActionArgNames) => name.sourceName);
+        ssm.getSecrets(secretNames).then((it: GetParametersCommandOutput) => {
             if (it.InvalidParameters && it.InvalidParameters.length > 0) {
                 it.InvalidParameters?.forEach((p: string) => {
                     core.error(`Failed to fetch AWS secret: ${p}`);
@@ -74,9 +75,16 @@ async function exportSecrets(args: ActionArgs): Promise<void> {
                 return;
             }
             it.Parameters?.forEach((p: Parameter) => {
+                const argName: ActionArgNames | undefined = args.secrets.find(
+                    (name: ActionArgNames) => name.sourceName === p.Name,
+                );
+                if (argName === undefined) {
+                    core.setFailed('Failed to lookup action arg name');
+                    return;
+                }
                 command.issue('add-mask', p.Value);
-                core.exportVariable(p.Name || '', p.Value);
-                core.info(`exported secret ${p.Name}`);
+                core.exportVariable(argName.exportName, p.Value);
+                core.info(`exported secret ${argName.exportName}`);
             });
         });
     }
