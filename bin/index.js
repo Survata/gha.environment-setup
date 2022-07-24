@@ -55,7 +55,9 @@ var Action;
     function run(args) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield exportVariables(args);
+                if (args.region.length > 0) {
+                    yield exportVariables(args);
+                }
                 yield exportSecrets(args);
                 yield setNetAndNpm(args);
             }

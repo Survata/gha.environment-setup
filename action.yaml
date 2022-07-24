@@ -3,10 +3,10 @@ description: 'GitHub action which sets up the runner environment'
 inputs:
   environmentName:
     description: 'Environment name'
-    required: true
+    required: false
   regionName:
     description: 'Region name'
-    required: true
+    required: false
   secretNames:
     description: 'List of secret names'
     required: false

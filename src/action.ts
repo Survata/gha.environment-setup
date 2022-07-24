@@ -17,7 +17,9 @@ export namespace Action {
      */
     export async function run(args: ActionArgs) {
         try {
-            await exportVariables(args);
+            if (args.region.length > 0) {
+                await exportVariables(args);
+            }
             await exportSecrets(args);
             await setNetAndNpm(args);
         } catch (e: any) {
