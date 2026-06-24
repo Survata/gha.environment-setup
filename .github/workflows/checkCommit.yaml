@@ -35,3 +35,6 @@ jobs:
 
       - name: Build bundle
         run: yarn package
+
+      - name: Verify committed bundle is up to date
+        run: git diff --exit-code bin/index.js
