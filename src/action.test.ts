@@ -3,6 +3,7 @@
 'use strict';
 
 import * as core from '@actions/core';
+import * as command from '@actions/core/lib/command';
 import { GetParametersCommandOutput } from '@aws-sdk/client-ssm';
 import { Action } from './action';
 import { ActionArgs } from './actionArgs';
@@ -86,9 +87,8 @@ describe('Action.run() secret export', () => {
         await Action.run(
             buildArgs({ region: '', secrets: [{ sourceName: 'DB_PASSWORD', exportName: 'DB_PASSWORD_OUT' }] }),
         );
-        // exportSecrets settles its SSM promise on the microtask queue; let it drain before asserting.
-        await new Promise((resolve) => setImmediate(resolve));
 
+        expect(command.issue).toHaveBeenCalledWith('add-mask', 's3cr3t');
         expect(core.exportVariable).toHaveBeenCalledWith('DB_PASSWORD_OUT', 's3cr3t');
     });
 });

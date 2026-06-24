@@ -36260,24 +36260,23 @@ async function exportVariables(args) {
 async function exportSecrets(args) {
     if (args.secrets.length > 0) {
         const secretNames = args.secrets.map((name) => name.sourceName);
-        ssm.getSecrets(secretNames).then((it) => {
-            if (it.InvalidParameters && it.InvalidParameters.length > 0) {
-                it.InvalidParameters?.forEach((p) => {
-                    core.error(`Failed to fetch AWS secret: ${p}`);
-                });
-                core.setFailed('');
+        const it = await ssm.getSecrets(secretNames);
+        if (it.InvalidParameters && it.InvalidParameters.length > 0) {
+            it.InvalidParameters?.forEach((p) => {
+                core.error(`Failed to fetch AWS secret: ${p}`);
+            });
+            core.setFailed('');
+            return;
+        }
+        it.Parameters?.forEach((p) => {
+            const argName = args.secrets.find((name) => name.sourceName === p.Name);
+            if (argName === undefined) {
+                core.setFailed('Failed to lookup action arg name');
                 return;
             }
-            it.Parameters?.forEach((p) => {
-                const argName = args.secrets.find((name) => name.sourceName === p.Name);
-                if (argName === undefined) {
-                    core.setFailed('Failed to lookup action arg name');
-                    return;
-                }
-                command.issue('add-mask', p.Value);
-                core.exportVariable(argName.exportName, p.Value);
-                core.info(`exported secret ${argName.exportName}`);
-            });
+            command.issue('add-mask', p.Value);
+            core.exportVariable(argName.exportName, p.Value);
+            core.info(`exported secret ${argName.exportName}`);
         });
     }
 }
