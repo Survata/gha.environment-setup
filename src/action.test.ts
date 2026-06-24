@@ -11,9 +11,15 @@ import { ssm } from './ssm';
 jest.mock('@actions/core');
 jest.mock('@actions/core/lib/command');
 jest.mock('./ssm');
-jest.mock('fs', () => ({
-    promises: { writeFile: jest.fn() },
-}));
+// Preserve the real fs (fs.constants is read at import time by @actions/io); only
+// stub writeFile so setNetAndNpm does not write real .netrc / ~/.npmrc files.
+jest.mock('fs', () => {
+    const actual = jest.requireActual('fs');
+    return {
+        ...actual,
+        promises: { ...actual.promises, writeFile: jest.fn().mockResolvedValue(undefined) },
+    };
+});
 
 const deploymentVariables = JSON.stringify({
     staging: { DB_HOST: 'db.staging.internal', FEATURE_FLAG: 'on' },
