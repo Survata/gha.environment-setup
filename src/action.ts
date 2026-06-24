@@ -68,26 +68,25 @@ async function exportVariables(args: ActionArgs) {
 async function exportSecrets(args: ActionArgs): Promise<void> {
     if (args.secrets.length > 0) {
         const secretNames: string[] = args.secrets.map((name: ActionArgNames) => name.sourceName);
-        ssm.getSecrets(secretNames).then((it: GetParametersCommandOutput) => {
-            if (it.InvalidParameters && it.InvalidParameters.length > 0) {
-                it.InvalidParameters?.forEach((p: string) => {
-                    core.error(`Failed to fetch AWS secret: ${p}`);
-                });
-                core.setFailed('');
+        const it: GetParametersCommandOutput = await ssm.getSecrets(secretNames);
+        if (it.InvalidParameters && it.InvalidParameters.length > 0) {
+            it.InvalidParameters?.forEach((p: string) => {
+                core.error(`Failed to fetch AWS secret: ${p}`);
+            });
+            core.setFailed('');
+            return;
+        }
+        it.Parameters?.forEach((p: Parameter) => {
+            const argName: ActionArgNames | undefined = args.secrets.find(
+                (name: ActionArgNames) => name.sourceName === p.Name,
+            );
+            if (argName === undefined) {
+                core.setFailed('Failed to lookup action arg name');
                 return;
             }
-            it.Parameters?.forEach((p: Parameter) => {
-                const argName: ActionArgNames | undefined = args.secrets.find(
-                    (name: ActionArgNames) => name.sourceName === p.Name,
-                );
-                if (argName === undefined) {
-                    core.setFailed('Failed to lookup action arg name');
-                    return;
-                }
-                command.issue('add-mask', p.Value);
-                core.exportVariable(argName.exportName, p.Value);
-                core.info(`exported secret ${argName.exportName}`);
-            });
+            command.issue('add-mask', p.Value);
+            core.exportVariable(argName.exportName, p.Value);
+            core.info(`exported secret ${argName.exportName}`);
         });
     }
 }

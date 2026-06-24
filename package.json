@@ -10,21 +10,31 @@
   ],
   "bin": "./dist/index.js",
   "dependencies": {
-    "@actions/core": "^1.8.2",
-    "@actions/github": "^5.0.3",
-    "@aws-sdk/client-ssm": "^3.95.0"
+    "@actions/core": "^1.11.1",
+    "@aws-sdk/client-ssm": "^3.1075.0"
   },
   "devDependencies": {
     "@types/jest": "^27.5.1",
     "@types/node": "^17.0.35",
     "@typescript-eslint/eslint-plugin": "^5.27.0",
     "@typescript-eslint/parser": "^5.27.0",
+    "@vercel/ncc": "^0.38.4",
     "eslint": "^8.16.0",
     "eslint-config-prettier": "^8.5.0",
     "jest": "^28.1.0",
     "prettier": "^2.6.2",
     "ts-jest": "^28.0.3",
     "typescript": "^4.6.4"
+  },
+  "resolutions": {
+    "json5": "^2.2.3",
+    "braces": "^3.0.3",
+    "minimatch": "^3.1.5",
+    "flatted": "^3.4.2",
+    "picomatch": "^2.3.2",
+    "js-yaml": "^4.2.0",
+    "@babel/core": "^7.29.6",
+    "@babel/traverse": "^7.29.6"
   },
   "scripts": {
     "build": "tsc",
