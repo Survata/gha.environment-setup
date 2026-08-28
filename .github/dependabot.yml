@@ -1,0 +1,21 @@
+# Dependabot configuration.
+#
+# Only the `github-actions` ecosystem is monitored: it keeps the SHA-pinned actions in
+# .github/workflows (see .pinact.yml + the pinned-actions guard in checkCommit) current. A
+# github-actions PR only bumps a pinned action ref — it never touches the committed
+# `bin/index.js` bundle and never requires moving the `v1` tag.
+#
+# npm dependencies are not auto-monitored here; bump them manually (see README).
+version: 2
+updates:
+  # Monthly, grouped into a single PR; cooldown skips releases younger than 14 days.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    cooldown:
+      default-days: 14
+    groups:
+      actions:
+        patterns:
+          - "*"
