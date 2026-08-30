@@ -47,7 +47,7 @@ Each entry in `variableNames` and `secretNames` is either `NAME` (exported under
 
 ## Development
 
-Requires Node 20 (see `.nvmrc`).
+Requires Node 24 (see `.nvmrc`).
 
 ```bash
 nvm use
@@ -68,8 +68,10 @@ All consumers reference `Survata/gha.environment-setup@v1`. The `v1` tag is a **
 moving it rolls every consumer to the new version on their next workflow run. No consumer-side
 changes are required.
 
-The shipped artifact is the committed `bin/index.js` bundle, **not** `package.json` / `yarn.lock`.
-A source or dependency change is not live until the bundle is rebuilt and the `v1` tag is moved.
+The shipped artifact is the manifest `action.yaml` plus the committed `bin/index.js` bundle —
+**not** `package.json` / `yarn.lock`. A change to either shipped file (a source/dependency change
+that rebuilds the bundle, or an `action.yaml` change such as the runtime `using:`) is not live
+until it is merged and the `v1` tag is moved.
 
 ### Procedure
 
@@ -109,15 +111,22 @@ A source or dependency change is not live until the bundle is rebuilt and the `v
    git push origin v1.1.0
    ```
 
-## Dependency updates (Dependabot)
+## Dependency updates
 
-> ⚠️ **Merging a Dependabot PR is not a deploy.** The artifact that runs in consumer workflows is the
-> committed `bin/index.js` bundle, which Dependabot does **not** regenerate. If you merge a dependency
-> bump and stop there, every consumer keeps running the old code baked into `bin/index.js`.
+A monthly **github-actions** Dependabot ([`.github/dependabot.yml`](.github/dependabot.yml)) keeps
+the SHA-pinned actions in `.github/workflows` current. Its PRs only bump a pinned action ref — they
+never touch the `bin/index.js` bundle and never require moving the `v1` tag, so nothing below
+applies to them.
 
-To actually ship a dependency update:
+**npm dependencies are not auto-monitored** — bump them manually. And when you do:
 
-1. Check out the Dependabot branch so `package.json` / `yarn.lock` are updated.
+> ⚠️ **An npm dependency bump is not a deploy.** The artifact that runs in consumer workflows is the
+> committed `bin/index.js` bundle, which is **not** regenerated automatically. If you bump a
+> dependency and stop there, every consumer keeps running the old code baked into `bin/index.js`.
+
+To actually ship an npm dependency update:
+
+1. On a branch, update `package.json` / `yarn.lock`.
 2. `yarn install && yarn lint && yarn test && yarn package`.
 3. Commit the regenerated `bin/index.js` together with the lockfile change.
 4. Merge, then follow [Publishing a new version](#publishing-a-new-version-rebuild-the-binary-and-re-tag)
